@@ -9,7 +9,6 @@ Created on Sat May  7 18:04:19 2016
 Class Definitions for expanding_block
 """
 
-import find_variance
 import numpy as np
 
 """ overlapping blocks of the image that are compared to find copy-paste forgery """
@@ -17,15 +16,16 @@ class Block:
     def __init__(self, img, row, col, init):
         rowEnd = row+(init.blockSize-1)
         colEnd = col+(init.blockSize-1)
-        self.pixel = (img[row:rowEnd][:, col:colEnd])
+        self.pixel = (img[row:rowEnd, col:colEnd])
         # actual pixels of the block
         self.row = row  # start of row
         self.col = col  # start of column
-        self.variance = find_variance(self.pixel)
+        self.variance = np.var(self.pixel)
         # variance of pixels: mean((pixel-mean(pixels))**2)
-        
-        self.tooLowVariance = self.variance < init.varianceThreshold 
+        self.tooLowVariance = self.variance < init.varianceThreshold
         # boolean: if true, we eliminate the block and don't consider it
+    def __str__(self):
+        return ('Block: row = '+str(self.row), ', col = ' +str(self.col))
         
 
 """ customizable settings to adjust for image size """
@@ -64,7 +64,7 @@ class ExpandingBlockInit:
             self.numBuckets = 12000
             self.minArea = 70
             self.varianceThreshold = 16*4
-        else:
+        else: # image larger than 4900000 pixels
             self.blockSize = 16
             self.blockDistance = 1
             self.numBuckets = size // 128
