@@ -50,6 +50,7 @@ def process_bucket(bucket, init):
         # I need to go back and do the actual math /stats
         # to pick this value more intelligently, but for now it's OK.
         # 5/12/2016
+        
         pValThreshold = chi2.ppf(.01, (subSize**2)*MAGIC_THRESHOLD_ADJUSTMENT)
         too_similar = test_statistic < pValThreshold
         
@@ -96,8 +97,7 @@ def process_bucket(bucket, init):
         for index, block in enumerate(bucket):
             if connection[index]:
                 newBucket.append(block)
-	
-	if len(newBucket)*init.blockSize < init.minArea:
+        if len(newBucket)*init.blockSize < init.minArea:
             return []
-	else:
+        else:
             return newBucket
