@@ -33,6 +33,12 @@ class ExpandingBlockInit:
     def __init__(self, img):
         size = np.shape(img)[0]*np.shape(img)[1]
         
+        # varianceThreshold are 'magic numbers' chosen by trial and error to get
+        # the damn thing to work with acceptable True Positive / False Negative
+        # True Negative / False Positive rates
+        # I don't think they're even close to ideal, but for now this is OK.
+        # 5/12/2016
+        
         if size <= 50**2:
             self.blockSize = 8
             self.blockDistance = 1

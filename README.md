@@ -10,7 +10,7 @@ Free for noncommerical use or modification, but please retain the above credits.
 Please ask for commerical use.
 
 ## expanding_block.py:
-
+main function.
 ###input:
 filename that contains an mxn image (color or grayscale)
 known valid formats: '.png', '.jpg'
@@ -19,7 +19,7 @@ known valid formats: '.png', '.jpg'
     where imageConsideredModified is True | False
     if imageConsideredModified == True,     imgOut is the original image
     if imageConsideredModified == False,    imgOut is a (2m+8) x n x 3 image
-	main function.
+
 
 ##block_class
 class definitions and initilization.
