@@ -44,7 +44,7 @@ def process_bucket(bucket, init):
     # calculate whether blocks are too similar to have occured by chance
     def find_connection(bucket, test_statistic):  
         test_statistic = calculate_test_statistic(bucket)
-        pValThreshold = chi2.ppf(.01, (subSize**2)) / 768
+        pValThreshold = chi2.ppf(.01, (subSize**2))/(128*2.5)
         too_similar = test_statistic < pValThreshold
         
         # blocks are "connected" if they occur by chance < 1% of the time and

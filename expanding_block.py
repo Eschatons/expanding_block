@@ -156,5 +156,6 @@ output:
     """
     mask = create_mask(blocks, baseImg, init)
     imgOut = np.uint8(write_mask(mask, baseImg))
-#    io.imshow(imgOut)
+    if DEBUG:
+        io.imshow(imgOut)
     return imageConsideredModified, imgOut
