@@ -41,10 +41,11 @@ def write_mask(mask, img):
     
     # create psuedo-rgb grayscale version of image
     
-    imgMasked = color.gray2rgb(color.rgb2gray(img))
+    imgMasked = np.uint8(255*color.gray2rgb(color.rgb2gray(img)))
     imgMasked[mask==FILL_CHANNEL] = 255
     imgMasked[mask==REMOVE_CHANNEL] = 0
+    rows = np.shape(img)[0]
     separator = np.zeros((rows, 8, 3), 'uint8')
     separator[:, :, BLUE] = 255
-    imgOut = np.concatenate((img, separator, imgMasked), axis=0)
+    imgOut = np.concatenate((img, separator, imgMasked), axis=1)
     return imgOut
