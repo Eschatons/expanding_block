@@ -96,7 +96,8 @@ def process_bucket(bucket, init):
         for index, block in enumerate(bucket):
             if connection[index]:
                 newBucket.append(block)
-        if len(newBucket)*init.blockSize < init.minArea:
+	
+	if len(newBucket)*init.blockSize < init.minArea:
             return []
-        else:
+	else:
             return newBucket
