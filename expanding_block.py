@@ -9,16 +9,13 @@ Created on Sat May  7 11:53:35 2016
 expanding_block
 """
 
-DEBUG = True
-
 import numpy as np
 from block_class import Block, ExpandingBlockInit
 from skimage import io, color
 from mask import create_mask, write_mask
 from process_bucket import process_bucket
 
-def expanding_block(filename):
-
+def expanding_block(filename, *, debug = False):
     """
 Tests an image for copy-move forgery (a portion of an image has been copied
 and then moved somewhere else within the image.)
@@ -62,28 +59,14 @@ output:
             baseImg = np.uint8(255*color.gray2rgb(baseImg))
         else:
             raise valError
-    except Exception as exc:
-        raise exc
-    """
-    set parameters based off image size
 
-    """
     init = ExpandingBlockInit(img)
-
-    """
-    Divide the image into small overlapping blocks of blockSize ** 2
-    """
-#   img = Image.open(filename)
 
     rows = np.shape(img)[0]-init.blockSize
     cols = np.shape(img)[1]-init.blockSize
     blocks = ([Block(img, row, col, init)
         for row in range(rows) for col in range(cols)])
-
-    def byVariance_key(block):
-        return block.variance
-
-    blocks = sorted(blocks, key = byVariance_key)
+    blocks = sorted(blocks, key = lambda block: block.variance)
 
     """
     remove elements with too low of variance to cut down on false positives
@@ -94,7 +77,7 @@ output:
     blocks = [block for block in blocks if not block.tooLowVariance]
 
     """
-    assign blocks to groups
+    assign blocks as evenly as possible to groups
     """
 
     groups = [ [] for x in range(init.numBuckets)]
@@ -104,17 +87,13 @@ output:
     count = 0
 
     for block in blocks:
-        try:
-            groups[group].append(block)
-            count += 1
-        except IndexError:
-            print('trying to assign to group ' + str(group) + ' when')
-            print('init.numBuckets = ' + str(init.numBuckets))
-            raise IndexError
+        groups[group].append(block)
+        count += 1
 
         if count > blocksPerBucket:
             group += 1
             count -= blocksPerBucket
+
     """
     assign groups to buckets
     """
@@ -130,14 +109,13 @@ output:
     """
     process buckets for pixel-to-pixel similiarity
     """    
-    buckets = [process_bucket(bucket, init) for bucket in buckets]
+    buckets = [process_bucket(bucket) for bucket in buckets]
+    
     """
     recombine buckets after processing, removing empty buckets
     """
-    blocks = []
-    for bucket in buckets:
-        for block in bucket:
-            blocks.append(block)
+    blocks = [block for bucket in buckets for block in bucket]
+        
 
     """
     if there are no blocks left, the image is clean
@@ -154,6 +132,6 @@ output:
     """
     mask = create_mask(blocks, baseImg, init)
     imgOut = np.uint8(write_mask(mask, baseImg))
-    if DEBUG:
+    if debug:
         io.imshow(imgOut)
     return imageConsideredModified, imgOut
