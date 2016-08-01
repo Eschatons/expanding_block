@@ -28,8 +28,8 @@ def create_mask(blocks, img, init):
         rowEnd = row + init.blockSize
         colEnd = col + init.blockSize
         mask[row:rowEnd, col:colEnd, RED] = FILL_CHANNEL
-        mask[row:rowEnd, col:colEnd, BLUE] = REMOVE_CHANNEL
-        mask[row:rowEnd, col:colEnd, GREEN] = REMOVE_CHANNEL
+        mask[row:rowEnd, col:colEnd, BLUE] = FILL_CHANNEL
+        mask[row:rowEnd, col:colEnd, GREEN] = FILL_CHANNEL
     return mask
     
 def write_mask(mask, img):
@@ -45,7 +45,6 @@ def write_mask(mask, img):
     imgMasked[mask==FILL_CHANNEL] = 255
     imgMasked[mask==REMOVE_CHANNEL] = 0
     rows = np.shape(img)[0]
-    separator = np.zeros((rows, 8, 3), 'uint8')
-    separator[:, :, BLUE] = 255
+    separator = np.ones((rows, 16, 3), 'uint8')*255
     imgOut = np.concatenate((img, separator, imgMasked), axis=1)
     return imgOut

@@ -42,7 +42,6 @@ output:
     if imageConsideredModified == False,    imgOut is a (2m+8) x n x 3 image
     """
 
-
     """
     file IO and conversion to grayscale:
     """
@@ -74,7 +73,7 @@ output:
     """
     Divide the image into small overlapping blocks of blockSize ** 2
     """
-    #img = Image.open(filename)
+#   img = Image.open(filename)
 
     rows = np.shape(img)[0]-init.blockSize
     cols = np.shape(img)[1]-init.blockSize
@@ -113,8 +112,7 @@ output:
             print('init.numBuckets = ' + str(init.numBuckets))
             raise IndexError
 
-
-        if count >+ blocksPerBucket:
+        if count > blocksPerBucket:
             group += 1
             count -= blocksPerBucket
     """
@@ -126,7 +124,7 @@ output:
             buckets[n] = groups[n-1] + groups[n] + groups[n+1]
         except IndexError:
             if n == init.numBuckets-1:
-                buckets[n] = groups[n-1]+groups[n] + groups[-1]
+                buckets[n] = groups[n-1]+groups[n]
             else:
                 raise IndexError
     """
@@ -152,7 +150,7 @@ output:
 
     """
     otherwise, we create a masked image to show where the
-    modification occured
+    modification occurs
     """
     mask = create_mask(blocks, baseImg, init)
     imgOut = np.uint8(write_mask(mask, baseImg))
