@@ -6,13 +6,12 @@ Created on Sat May  7 18:20:55 2016
 """
 
 import numpy as np
-from block_class import Block, ExpandingBlockInit
 from scipy.stats.distributions import chi2  
 
-def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
+def process_bucket(bucket, init):
 
     # subfunctions
-    def find_overlap(bucket:list[Block]) -> np.ndarray[bool]:
+    def find_overlap(bucket):
         ''' 
         calculate whether blocks are pulled from overlapping
         regions of the image '''
@@ -28,8 +27,7 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
 
         return np.logical_or(rowOverlap, colOverlap)
         
-    def calculate_testStatistic(subBlocks:  np.ndarray[float]
-            ) -> np.ndarray[float]:
+    def calculate_testStatistic(subBlocks):
         ''' calculate the test statistic of block-to-block similarity: 
         for each ordered pair subBlocki, subBlockj. this is 
         sum(pixeli-pixelj)**2 / (.5*variancei+vareiancej* size(subBlock))'''
@@ -53,8 +51,7 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
 
 
     
-    def find_connection(testStatistic:np.ndarray[float], 
-                        overlap:np.ndarray[bool]) -> np.ndarray[bool]:  
+    def find_connection(testStatistic, overlap):  
         '''calculate whether blocks are too similar to have occured by chance
         blocks are "connected" if they occur by chance < 1% of the time and
         do not overlap.'''

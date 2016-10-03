@@ -12,12 +12,39 @@ Class Definitions for expanding_block
 import numpy as np
 
 
-
+class Block:
+    """ overlapping blocks of the image that are compared
+    to find copy-paste forgery """
+    def __init__(self, img, row, col, init):
+        rowEnd = row+(init.blockSize-1)
+        colEnd = col+(init.blockSize-1)
+        self.pixel = (img[row:rowEnd, col:colEnd])
+        # actual pixels of the block
+        self.row = row  # start of row
+        self.col = col  # start of column
+        self.init = init # hold reference to init for __repr__
+        self.variance = np.var(self.pixel)
+        # variance of pixels: mean((pixel-mean(pixels))**2)
+        self.tooLowVariance = self.variance < (init.varianceThreshold)
+        self.img = img
+        # boolean: if true, we eliminate the block and don't consider it
+    def __str__(self):
+        return (''.join(['Block: row = ', str(self.row), ', col = ', str(self.col)]))
+        
+    def __repr__(self):
+        return('Block({0}, {1}, {2}, {3}'.format(self.row, self.col, self.init))
+    
+    def __getitem__(self):
+        return self.pixel
+        
+    def __len__(self):
+        return len(self.pixel)
+    
 
 
 class ExpandingBlockInit:
     """ customizable settings to adjust for image size """
-    def __init__(self, img: np.ndarray):
+    def __init__(self, img):
         size = np.shape(img)[0]*np.shape(img)[1]
         
         # varianceThreshold are 'magic numbers' chosen by trial and error to get
@@ -62,35 +89,3 @@ class ExpandingBlockInit:
             self.numBuckets = size // 128
             self.minArea = 120
             self.varianceThreshold = 4*self.blockSize**2
-            
-class Block:
-    """ overlapping blocks of the image that are compared
-    to find copy-paste forgery """
-    def __init__(self, img:np.ndarray, row:int, col:int, init:ExpandingBlockInit):
-        rowEnd = row+(init.blockSize-1)
-        colEnd = col+(init.blockSize-1)
-        self.pixel = (img[row:rowEnd, col:colEnd])
-        # actual pixels of the block
-        self.row = row  # start of row
-        self.col = col  # start of column
-        self.init = init # hold reference to init for __repr__
-        self.variance = np.var(self.pixel)
-        # variance of pixels: mean((pixel-mean(pixels))**2)
-        self.tooLowVariance = self.variance < (init.varianceThreshold)
-        # boolean: if true, we eliminate the block and don't consider it
-    def __str__(self):
-        return self.pixel
-        
-#    def __repr__(self):
-#        return('Block({0}, {1}, {2}, {3}'.format(self.row, self.col, self.init))
-    
-    def __getitem__(self, key):
-        return self.pixel[key]
-    def __setitem__(self, key, value):
-        self.pixel[key] = value
-        return None
-    def __contains__(self, key):
-        return key in self.pixel
-    def __len__(self):
-        return len(self.pixel)
-    
