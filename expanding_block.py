@@ -64,14 +64,13 @@ output:
 
     rows = np.shape(img)[0]-init.blockSize
     cols = np.shape(img)[1]-init.blockSize
-    blocks = ([Block(img, row, col, init)
-        for row in range(rows) for col in range(cols)])
+    blocks = ([Block(img, row, col, init) for row in range(rows) 
+        for col in range(cols)])
     blocks = sorted(blocks, key = lambda block: block.variance)
 
     """
     remove elements with too low of variance to cut down on false positives
     due to bad white balance on source camera or areas of block color
-
     """
 
     blocks = [block for block in blocks if not block.tooLowVariance]
@@ -107,7 +106,7 @@ output:
             else:
                 raise IndexError
     """
-    process buckets for pixel-to-pixel similiarity
+    process buckets for pixel-to-pixel similiarity. see process_bucket
     """    
     buckets = [process_bucket(bucket) for bucket in buckets]
     
