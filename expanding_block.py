@@ -14,8 +14,12 @@ from block_class import Block, ExpandingBlockInit
 from skimage import io, color
 from mask import create_mask, write_mask
 from process_bucket import process_bucket
+from itertools import dropwhile
 
-def expanding_block(filename, *, debug = False):
+# helper functions start here
+
+        
+def expanding_block(filename, *, _debug = False):
     """
 Tests an image for copy-move forgery (a portion of an image has been copied
 and then moved somewhere else within the image.)
@@ -40,8 +44,9 @@ output:
     """
 
     """
-    file IO and conversion to grayscale:
+    0. file IO and conversion to grayscale:
     """
+
     baseImg = io.imread(filename)
 
     try:
@@ -50,7 +55,7 @@ output:
 
         img = np.uint8(255*color.rgb2gray(baseImg))
 
-    except ValueError as valError:
+    except ValueError:
         shape = np.shape(baseImg)
         if shape[2] == 1:   # image is grayscale already
             img = baseImg
@@ -58,79 +63,100 @@ output:
             # so many unique cases later
             baseImg = np.uint8(255*color.gray2rgb(baseImg))
         else:
-            raise valError
+            raise
 
     init = ExpandingBlockInit(img)
 
-    rows = np.shape(img)[0]-init.blockSize
-    cols = np.shape(img)[1]-init.blockSize
-    blocks = ([Block(img, row, col, init) for row in range(rows) 
-        for col in range(cols)])
+    rows, cols, *_ = np.shape(img)-init.blockSize
+    blocks = ((Block(img, row, col, init) 
+        for row in range(rows) 
+        for col in range(cols))
+        )
     blocks = sorted(blocks, key = lambda block: block.variance)
 
     """
-    remove elements with too low of variance to cut down on false positives
+    1. remove elements with too low of variance to cut down on false positives
     due to bad white balance on source camera or areas of block color
     """
-
-    blocks = [block for block in blocks if not block.tooLowVariance]
-
-    """
-    assign blocks as evenly as possible to groups
-    """
-
-    groups = [ [] for x in range(init.numBuckets)]
-    # we don't want to use * to avoid nasty by-reference bugs
-    blocksPerBucket = len(blocks) / init.numBuckets
-    group = 0
-    count = 0
-
-    for block in blocks:
-        groups[group].append(block)
-        count += 1
-
-        if count > blocksPerBucket:
-            group += 1
-            count -= blocksPerBucket
-
-    """
-    assign groups to buckets
-    """
-    buckets = [None]*init.numBuckets
-    for n in range(init.numBuckets):
-        try:
-            buckets[n] = groups[n-1] + groups[n] + groups[n+1]
-        except IndexError:
-            if n == init.numBuckets-1:
-                buckets[n] = groups[n-1]+groups[n]
-            else:
-                raise IndexError
-    """
-    process buckets for pixel-to-pixel similiarity. see process_bucket
-    """    
-    buckets = [process_bucket(bucket) for bucket in buckets]
     
+    blocks = dropwhile(lambda block: block.tooLowVariance, blocks)
+
     """
-    recombine buckets after processing, removing empty buckets
+    2. assign blocks as evenly as possible to groups
+    """
+    def _generate_groups(blocks):
+        group = []
+        # we don't want to use * to avoid nasty by-reference bugs
+        blocksPerGroup = len(blocks) / init.numBuckets
+        group = 0
+        count = 0
+
+        for block in blocks:
+            if len(group) >= blocksPerGroup:
+                yield group
+                count -= blocksPerGroup
+                group = []
+            group.append(block)
+            count += 1
+        # flush cache of blocks
+        if count > 0:
+            yield group
+    groups = _generate_groups(blocks)
+
+    """
+    3. assign blocks in neighboring groups to overlapping buckets
+    """
+    def _generate_buckets(groups):
+        for n in range(len(groups)):
+            try:
+                bucket = groups[n-1] + groups[n] + groups[n+1]
+            except IndexError:
+                if n == init.numBuckets-1:
+                    bucket = groups[n-1]+groups[n]
+                else:
+                    raise
+            yield bucket
+    buckets = _generate_buckets(groups)
+    """
+    4. process buckets for pixel-to-pixel similiarity. see process_bucket
+    """    
+    buckets = (process_bucket(bucket) for bucket in buckets)
+    
+    
+    #buckets now hold blocks that we think are modified.
+    """
+    5. recombine buckets after processing
     """
     blocks = [block for bucket in buckets for block in bucket]
         
 
-    """
-    if there are no blocks left, the image is clean
-    """
-    if len(blocks) == 0:
-        imageConsideredModified = False
-        return imageConsideredModified, baseImg
-    #else
-    imageConsideredModified = True
+    #if there are no blocks left we consider image 'clean'
+    
 
+    if len(blocks) == 0:
+        """
+        6a. If image is considred clean, end of processing step.
+        """
+        imageConsideredModified = False
+        imgOut = baseImg
+    #else
+
+    else:
+        imageConsideredModified = True
+        """
+        6b. If image is considered modified,create mask for image
+        """
+        mask = create_mask(blocks, baseImg, init)
+    
+        """
+        7b. Paint mask over image
+        """ 
+        imgOut = np.uint8(write_mask(mask, baseImg))
+    
     """
-    otherwise, we create a masked image to show where the
-    modification occurs
+    8. Output.
     """
-    mask = create_mask(blocks, baseImg, init)
-    imgOut = np.uint8(write_mask(mask, baseImg))
-    if debug:
+    if _debug:
         io.imshow(imgOut)
+    
     return imageConsideredModified, imgOut

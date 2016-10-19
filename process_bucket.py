@@ -8,11 +8,12 @@ Created on Sat May  7 18:20:55 2016
 import numpy as np
 from block_class import Block, ExpandingBlockInit
 from scipy.stats.distributions import chi2  
+from sys import stderr
 
-def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
+def process_bucket(bucket:list, init:ExpandingBlockInit):
 
     # subfunctions
-    def find_overlap(bucket:list[Block]) -> np.ndarray[bool]:
+    def _find_overlap() -> np.ndarray[bool]:
         ''' 
         calculate whether blocks are pulled from overlapping
         regions of the image '''
@@ -28,7 +29,7 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
 
         return np.logical_or(rowOverlap, colOverlap)
         
-    def calculate_testStatistic(subBlocks:  np.ndarray[float]
+    def _calculate_test_statistic(subBlocks:  np.ndarray[float]
             ) -> np.ndarray[float]:
         ''' calculate the test statistic of block-to-block similarity: 
         for each ordered pair subBlocki, subBlockj. this is 
@@ -44,7 +45,7 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
             testStatistic[index] = pixel_diff / (sigmaSq*subSize)
         except ZeroDivisionError:
             print('''Zero division error! Filtering of low-variance blocks 
-            is not working. Setting testStatistic to 0.''')
+            is not working. Setting testStatistic to 0.''', file = stderr)
             testStatistic[index] = 0
             
         return testStatistic
@@ -53,18 +54,15 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
 
 
     
-    def find_connection(testStatistic:np.ndarray[float], 
-                        overlap:np.ndarray[bool]) -> np.ndarray[bool]:  
+    def _find_connection(subBlocks) -> np.ndarray[bool]:  
         '''calculate whether blocks are too similar to have occured by chance
         blocks are "connected" if they occur by chance < 1% of the time and
         do not overlap.'''
-        testStatistic = calculate_testStatistic(bucket)        
+        testStatistic = _calculate_test_statistic(subBlocks)  
+        overlap = _find_overlap()
         pValThreshold = chi2.ppf(.01, (subSize**2))
         tooSimilar = testStatistic < pValThreshold
-
-        connection = np.ones_like(tooSimilar)
-        connection = np.logical_xor(connection,
-            np.logical_or(overlap, np.logical_not(tooSimilar)))
+        connection = np.logical_and(tooSimilar, np.logical_not(overlap))
         
         return connection
     
@@ -82,9 +80,7 @@ def process_bucket(bucket:list[Block], init:ExpandingBlockInit):
         # then continue with 4x4, etc. until we hit blockSize
         subSize = min(subSize << 1, init.blockSize)
         subBlocks = [1.*block.pixel[0:subSize, 0:subSize] for block in bucket]
-        connection = find_connection(
-            testStatistic = calculate_testStatistic(subBlocks),
-            overlap = find_overlap(bucket) )
+        connection = _find_connection(subBlocks)
         connection = np.any(connection, axis=0)
         
         # isolated blocks (i.e, connection == False) are removed from bucket
