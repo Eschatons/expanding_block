@@ -77,18 +77,17 @@ class Block:
         self.variance = np.var(self.pixel)
         # variance of pixels: mean((pixel-mean(pixels))**2)
         self.tooLowVariance = self.variance < (init.varianceThreshold)
+		self.sourceImg = img
         # boolean: if true, we eliminate the block and don't consider it
     def __str__(self):
-        return self.pixel
+        return 'Block: row = {0}, col = {1}, pixel = {2}'.format(self.row, self.col, self.pixel)
         
-#    def __repr__(self):
-#        return('Block({0}, {1}, {2}, {3}'.format(self.row, self.col, self.init))
-    
+    def __repr__(self):
+		return 'Block{img = {0}, row = {1}, col = {2}, init = {3}'.format(self.sourceImg, self.row, self.col, self.init)
     def __getitem__(self, key):
         return self.pixel[key]
     def __setitem__(self, key, value):
         self.pixel[key] = value
-        return None
     def __contains__(self, key):
         return key in self.pixel
     def __len__(self):
